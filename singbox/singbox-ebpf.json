@@ -975,6 +975,10 @@
         "outbound": "📺 Emby"
       },
       {
+        "rule_set: "javdb_domain",
+        "outbound": "🔞 javdb"
+      },
+      {
         "rule_set": "google_domain",
         "outbound": "🇬 Google"
       },
@@ -1052,6 +1056,13 @@
         "format": "binary",
         "path": "./rule_provider/fakeip_filter.srs",
         "url": "https://v6.gh-proxy.com/https://raw.githubusercontent.com/QuixoticHeart/rule-set/ruleset/singbox/version2/fake-ip-filter.srs"
+      },
+      {
+        "tag": "javdb_domain",
+        "type": "remote",
+        "format": "binary",
+        "path": "./rule_provider/javdb_domain.srs",
+        "url": "https://v6.gh-proxy.com/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/sing/geo/geosite/javdb.srs"
       },
       {
         "tag": "webrtc",
