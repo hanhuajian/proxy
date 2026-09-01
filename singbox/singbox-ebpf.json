@@ -975,7 +975,7 @@
         "outbound": "📺 Emby"
       },
       {
-        "rule_set: "javdb_domain",
+        "rule_set": "javdb_domain",
         "outbound": "🔞 javdb"
       },
       {
