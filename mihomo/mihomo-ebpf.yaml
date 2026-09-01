@@ -1,0 +1,246 @@
+listeners:
+  - name: ebpf-in
+    type: ebpf
+    mode: hybrid
+    ipv6: true                # local / shared / hybrid，默认 local
+    network:            # 拦截协议，默认同时拦截 tcp 和 udp
+      - tcp
+      - udp
+    udp-timeout: 300    # UDP NAT 会话超时，单位秒，默认 300
+    dns-mode: hijack    # hijack（默认）: 53 端口在内核无条件改写入站；
+                        # respect_bypass: 先按放行规则检查，DNS 服务器命中 bypass 时直连；
+                        # off: 始终放行 53
+    bypass-private-address: true  # 私有/组播/链路本地目的地址内核直连（默认 true）
+    bypass-rule-set:    # 目标 IP 命中这些 rule-set 的 CIDR 时直接走内核
+      - CN_IP # rule-set 的 tag，允许 behavior: ipcidr 的 rule-set 整体提取，对于 behavior: classical 的 rule-set 则是提取其中的 IP-CIDR 规则
+    tcp-splice: false   # 实验性：DIRECT 出站 TCP 内核直转（跳过用户态拷贝；命中后不计流量）
+    local:              # 本机 cgroup 拦截
+      cgroup-path: ""     # cgroup v2 路径，默认自动探测 cgroup2 挂载点
+      ipv6-mode: auto     # 本机 IPv6 拦截：auto（默认）/ always / off。auto 探测原生 IPv6 路由并动态开关
+      include-uid: []     # 仅拦截指定进程 UID
+      include-uid-range: []  # 例如 "1000:99999"
+      exclude-uid: []     # 排除指定进程 UID（优先于 include）
+      exclude-uid-range: []
+      include-android-user: []  # Android 专用：仅拦截这些 Android 用户（0 = 主用户）
+      include-package: []   # Android 专用：仅拦截这些应用包名的流量
+      exclude-package: []   # Android 专用：排除这些应用包名的流量
+      state-capacity: 65536   # 本机各类 map 容量，默认 65536，范围 1-1048576
+    shared:             # 热点转发
+      interface: ["wlan2"]    # 要接管的热点/下游接口（必填）
+      ipv6-mode: always       # 共享 IPv6 拦截：always（默认）/ off
+      include-source-cidr: []  # 仅代理源地址命中这些 CIDR 的客户端流量（exclude 优先）
+      exclude-source-cidr: []  # 源地址命中这些 CIDR 的客户端流量直接放行
+      include-mac-address: []  # 仅代理源 MAC 命中这些地址的客户端流量
+      exclude-mac-address: []  # 源 MAC 命中这些地址的客户端流量直接放行
+      state-capacity: 65536    # 共享各类 map 容量（proxy/bypass/fragment），显式配置时三表统一；默认 proxy/bypass=65536、fragment=8192
+      advanced:
+        tc-priority: 1         # TC 过滤器优先级，默认 1（先于 Android 热点 offload）
+        data-plane: auto       # 共享数据面：auto（默认，socket_assign 失败回退 rewrite）/ socket_assign / rewrite
+        routing-mark: 0        # socket_assign 策略路由 mark，0=默认 0x53420001
+        routing-table: 0       # socket_assign 策略路由表，0=默认 2026
+
+# 基本配置
+mixed-port: 7890
+redir-port: 9797
+tproxy-port: 9898
+ipv6: true
+mode: Rule
+allow-lan: true
+unified-delay: true
+tcp-concurrent: true
+log-level: silent
+bind-address: "*"
+find-process-mode: always
+external-controller: 0.0.0.0:9090
+external-ui-url: "https://cdn.gh-proxy.org/https://github.com/musiyun124/zashboard/archive/refs/heads/gh-pages-no-fonts.zip"
+external-ui: dashboard
+secret: ""
+
+p: &p {type: http, interval: 99999, proxy: DIRECT, health-check: {enable: true, url: 'https://connectivitycheck.gstatic.com/generate_204', interval: 7200, timeout: 5000}, header: {User-Agent: ["ClashMetaForAndroid/v2.11.32"]}}
+# exclude-filter: '(?i)官网|邀请|到期|流量|更新|验证|剩余|频道|长期|推广|分享|周期|我的'
+
+# 订阅管理
+proxy-providers:
+  proxy1: {<<: *p, path: ./proxy_provider/proxy1.yaml, url: "https://sub.taidigou.eu.org/Rn2hQyYSAvCV6muQRjPQ/download/collection/zuixin"}
+
+# 节点记忆
+profile: {store-selected: true, store-fake-ip: true}
+
+# 时间校准
+ntp: {enable: true, write-to-system: true, server: ntp.aliyun.com, port: 123, interval: 60}
+
+# 嗅探模块
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: true
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+    TLS:
+      ports: [443, 5228, 8443]
+    QUIC:
+      ports: [443, 8443]
+  force-domain:
+    - "+.v2ex.com"
+  skip-domain: # 如遇需内部通信的应用请放行该域名
+    - "Mijia Cloud"
+
+# 网卡模块
+tun:
+  enable: false
+  mtu: 1500
+  device: ikun
+  stack: gvisor
+  dns-hijack: ['any:53', 'tcp://any:53']
+  udp-timeout: 300
+  auto-route: true
+  strict-route: true
+  exclude-package:
+  auto-redirect: true
+  auto-detect-interface: false
+  include-uid: []
+
+# DNS模块
+dns:
+  enable: true
+  ipv6: true
+  cache-algorithm: arc
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-range6: fc00::/18
+  fake-ip-filter-mode: rule
+  fake-ip-filter:
+  - RULE-SET,CN_域,real-ip
+  - RULE-SET,Fake-IP-Filter,real-ip
+  - RULE-SET,FCM_域,real-ip
+  - MATCH,fake-ip
+  default-nameserver:
+  - https://223.5.5.5/dns-query
+  - https://1.12.12.12/dns-query
+  nameserver-policy:
+    "RULE-SET:CN_域,FCM_域,Emby_域":
+    - https://dns.yiancloud.com.cn:843/dns-query
+  proxy-server-nameserver:
+  - https://dns.yiancloud.com.cn:843/dns-query
+  nameserver:
+  - https://cloudflare-dns.com/dns-query#DNS连接&h3=false
+
+# 分流模板锚点
+app_groups: &app_groups
+  type: select
+  proxies: [总模式,香港节点,台湾节点,狮城节点,日本节点,美国节点,手动选择,DIRECT]
+
+# 代理组配置
+proxy-groups:
+  - {name: 总模式, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Main.png", type: select, proxies: [手动选择,美国节点,香港节点,狮城节点,台湾节点,日本节点]}
+  - {name: Microsoft, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Microsoft.png", <<: *app_groups}
+  - {name: E-hentai, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/E-hentai.png", <<: *app_groups}
+  - {name: Pixiv, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Pixiv.png", <<: *app_groups}
+  - {name: Telegram, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Telegram.png", <<: *app_groups}
+  - {name: Emby, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Emby.png", <<: *app_groups}
+  - {name: Discord, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Discord.png", <<: *app_groups}
+  - {name: TikTok, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/TikTok.png", <<: *app_groups}
+  - {name: YouTube, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/YouTube.png", <<: *app_groups}
+  - {name: Instagram, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Instagram.png", <<: *app_groups}
+  - {name: Google, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Google.png", <<: *app_groups}
+  - {name: GoogleFCM, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/GoogleFCM.png", <<: *app_groups}
+  - {name: AI, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/AI.png", <<: *app_groups}
+  - {name: GitHub, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/GitHub.png", <<: *app_groups}
+  - {name: Twitter(X), icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Twitter.png", <<: *app_groups}
+  - {name: 广告拦截, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/GGLJ.png", type: select, proxies: [PASS,REJECT,REJECT-DROP]}
+  - {name: 国内直连名单, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/GNZL.png", type: select, proxies: [DIRECT,总模式]}
+  - {name: 海外代理名单, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/HWDL.png", <<: *app_groups}
+  - {name: DNS连接, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/DNS.png", <<: *app_groups}
+  - {name: 漏网之鱼, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/LWZY.png", <<: *app_groups}
+  - {name: 狮城节点, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Singapore.png", filter: "^(?=.*(新加坡|坡|狮城|SG|Singapore)).*$", include-all-providers: true, type: select}
+  - {name: 美国节点, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/UnitedStates.png", filter: "^(?=.*(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|America|US|United States)).*$", include-all-providers: true, type: select}
+  - {name: 香港节点, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/HongKong.png", filter: "^(?=.*(港|HK|hk|Hong Kong|HongKong|hongkong)).*$", include-all-providers: true, type: select}
+  - {name: 日本节点, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Japan.png", filter: "^(?=.*(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)).*$", include-all-providers: true, type: select}
+  - {name: 台湾节点, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Taiwan.png", filter: "^(?=.*(台|新北|彰化|TW|Taiwan)).*$", include-all-providers: true, type: select}
+  - {name: 手动选择, icon: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/icon2/Select.png", type: select, include-all-providers: true}
+
+# ============ 规则集锚点定义 ============
+rule-anchor:
+  Local: &Local {type: file, behavior: classical, format: text}
+  IPCIDR: &IPCIDR {type: http, behavior: ipcidr, format: mrs, interval: 86400}
+  Domain: &Domain {type: http, behavior: domain, format: mrs, interval: 86400}
+
+# ============ 规则集配置 ============
+rule-providers:
+  直连名单: {<<: *Local, path: ./rules/直连名单.list} # 需手动创建文件并添加规则
+  代理名单: {<<: *Local, path: ./rules/代理名单.list} # 需手动创建文件并添加规则
+
+  Fake-IP-Filter: {<<: *Domain, path: ./rules/Fake-IP-Filter.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/fakeip-filter.mrs"}
+
+  CN_IP: {<<: *IPCIDR, path: ./rules/CN_IP.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/cnip.mrs"}
+  CN_域: {<<: *Domain, path: ./rules/CN_域.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/cn.mrs"}
+  CN_Lite: {<<: *Domain, path: ./rules/CN_Lite.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/cn-lite.mrs"}
+
+  FCM_域: {<<: *Domain, path: ./rules/FCM_域.mrs, url: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/rules/FCM.mrs"}
+
+  No-ads-all_域: {<<: *Domain, path: ./rules/No-ads-all.mrs, url: "https://cdn.gh-proxy.org/https://github.com/217heidai/adblockfilters/raw/refs/heads/main/rules/adblockmihomo.mrs"}
+
+  TikTok_域: {<<: *Domain, path: ./rules/TikTok.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/tiktok.mrs"}
+
+  E-hentai_域: {<<: *Domain, path: ./rules/E-hentai.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/ehentai.mrs"}
+  Pixiv_域: {<<: *Domain, path: ./rules/Pixiv.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/pixiv.mrs"}
+
+  Telegram_IP: {<<: *IPCIDR, path: ./rules/Telegram_IP.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/telegramip.mrs"}
+
+  YouTube_域: {<<: *Domain, path: ./rules/YouTube.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/youtube.mrs"}
+
+  Google_域: {<<: *Domain, path: ./rules/Google.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/google.mrs"}
+  Google_IP: {<<: *IPCIDR, path: ./rules/Google_IP.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/google.mrs"}
+
+  Microsoft_域: {<<: *Domain, path: ./rules/Microsoft.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/microsoft.mrs"}
+
+  AI_域: {<<: *Domain, path: ./rules/AI.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/ai.mrs"}
+  AI_IP: {<<: *IPCIDR, path: ./rules/AI_IP.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/ai.mrs"}
+
+  Instagram_域: {<<: *Domain, path: ./rules/Instagram.mrs, url: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/rules/Instagram.mrs"}
+
+  Emby_域: {<<: *Domain, path: ./rules/Emby.mrs, url: "https://cdn.gh-proxy.org/https://github.com/musiyun124/mihomo/raw/refs/heads/main/rules/Emby.mrs"}
+
+  Discord_域: {<<: *Domain, path: ./rules/Discord.mrs, url: "https://cdn.gh-proxy.org/https://github.com/peiyingyao/Rule-for-OCD/raw/refs/heads/master/rule/Clash/Discord/Discord_OCD_Domain.mrs"}
+
+  GitHub_域: {<<: *Domain, path: ./rules/GitHub.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/github.mrs"}
+
+  Twitter_域: {<<: *Domain, path: ./rules/Twitter.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geosite/twitter.mrs"}
+  Twitter_IP: {<<: *IPCIDR, path: ./rules/Twitter_IP.mrs, url: "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo-lite/geoip/twitter.mrs"}
+
+  Private_域: {<<: *Domain, path: ./rules/LAN.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/private.mrs"}
+  Private_IP: {<<: *IPCIDR, path: ./rules/Private_IP.mrs, url: "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/raw/refs/heads/mihomo-ruleset/privateip.mrs"}
+
+# ============ 路由规则 ============
+# 规则优先级：从上到下依次匹配，命中即停止
+rules:
+  - RULE-SET,直连名单,国内直连名单
+  - RULE-SET,代理名单,海外代理名单
+  - RULE-SET,Private_域,DIRECT
+  - RULE-SET,Private_IP,DIRECT,no-resolve
+  - DOMAIN,browserleaks.com,漏网之鱼
+  - RULE-SET,CN_Lite,DIRECT
+  - RULE-SET,CN_IP,DIRECT,no-resolve
+  - RULE-SET,Emby_域,Emby
+  - RULE-SET,No-ads-all_域,广告拦截
+  - RULE-SET,E-hentai_域,E-hentai
+  - RULE-SET,Pixiv_域,Pixiv
+  - RULE-SET,Telegram_IP,Telegram,no-resolve
+  - RULE-SET,Discord_域,Discord
+  - RULE-SET,FCM_域,GoogleFCM
+  - RULE-SET,TikTok_域,TikTok
+  - RULE-SET,Instagram_域,Instagram
+  - PROCESS-NAME,com.openai.chatgpt,AI
+  - RULE-SET,AI_域,AI
+  - RULE-SET,AI_IP,AI,no-resolve
+  - RULE-SET,Twitter_域,Twitter(X)
+  - RULE-SET,Twitter_IP,Twitter(X),no-resolve
+  - RULE-SET,YouTube_域,YouTube
+  - RULE-SET,Google_域,Google
+  - RULE-SET,Google_IP,Google,no-resolve
+  - RULE-SET,Microsoft_域,Microsoft
+  - RULE-SET,GitHub_域,GitHub
+  - MATCH,漏网之鱼
