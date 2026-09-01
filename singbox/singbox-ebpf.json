@@ -307,9 +307,18 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🔁 Auto",
         "🗺️ Select"
       ]
+    },
+    {
+      "type": "urltest",
+      "tag": "🔁 Auto",
+      "use_all_providers": true,
+      "url": "https://cp.cloudflare.com",
+      "interval": "20m0s",
+      "tolerance": 50
     },
     {
       "type": "selector",
@@ -331,6 +340,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -347,6 +357,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -363,6 +374,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -403,6 +415,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -419,6 +432,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -435,6 +449,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -467,6 +482,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -499,6 +515,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -515,6 +532,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -531,6 +549,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -547,6 +566,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -563,6 +583,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -579,6 +600,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -595,6 +617,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -611,6 +634,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -627,6 +651,7 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
@@ -643,17 +668,10 @@
         "🇸🇬 SG",
         "🇺🇸 US",
         "🇬🇧 UK",
+        "🇦🇺 Melbourne",
         "🗺️ Select",
         "🔁 Auto"
       ]
-    },
-    {
-      "type": "urltest",
-      "tag": "🔁 Auto",
-      "use_all_providers": true,
-      "url": "https://cp.cloudflare.com",
-      "interval": "20m0s",
-      "tolerance": 50
     },
     {
       "type": "selector",
@@ -701,6 +719,15 @@
       ],
       "include": "(?i)(🇸🇬|新加坡|狮城|SG|sg|Singapore)"
     },
+    {
+      "type": "selector",
+      "tag": "🇦🇺 Melbourne",
+      "outbounds": [
+        "🇦🇺 Melbourne Auto"
+      ],
+      "include": "(?i)(au|墨尔本|Melbourne|AU|澳大利亚|澳洲)"
+    },
+
     {
       "type": "selector",
       "tag": "🇺🇸 US",
@@ -760,6 +787,17 @@
       "idle_timeout": "50m",
       "tolerance": 80
     },
+    {
+      "type": "urltest",
+      "tag": "🇦🇺 Melbourne Auto",
+      "use_all_providers": true,
+      "include": "(?i)(au|墨尔本|Melbourne|AU|澳大利亚|澳洲)",
+      "url": "https://cp.cloudflare.com",
+      "interval": "30m",
+      "idle_timeout": "50m",
+      "tolerance": 80
+    },
+
     {
       "type": "urltest",
       "tag": "🇺🇸 US Auto",
