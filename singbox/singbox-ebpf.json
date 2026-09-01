@@ -521,6 +521,22 @@
     },
     {
       "type": "selector",
+      "tag": "🔞 javdb",
+      "outbounds": [
+        "📦 ALL",
+        "🇨🇳 CN",
+        "🇭🇰 HK",
+        "🇹🇼 TW",
+        "🇯🇵 JP",
+        "🇸🇬 SG",
+        "🇺🇸 US",
+        "🇬🇧 UK",
+        "🗺️ Select",
+        "🔁 Auto"
+      ]
+    },
+    {
+      "type": "selector",
       "tag": "🎶 Spotify",
       "outbounds": [
         "📦 ALL",
@@ -1317,7 +1333,6 @@
         "url": "https://v6.gh-proxy.com/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/sing/geo/geosite/ubisoft.srs"
       }
     ],
-    "final": "🐠 Final",
     "auto_detect_interface": true,
     "find_process": false
   }
