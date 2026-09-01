@@ -648,22 +648,6 @@
       ]
     },
     {
-      "type": "selector",
-      "tag": "🐠 Final",
-      "outbounds": [
-        "📦 ALL",
-        "🇨🇳 CN",
-        "🇭🇰 HK",
-        "🇹🇼 TW",
-        "🇯🇵 JP",
-        "🇸🇬 SG",
-        "🇺🇸 US",
-        "🇬🇧 UK",
-        "🗺️ Select",
-        "🔁 Auto"
-      ]
-    },
-    {
       "type": "urltest",
       "tag": "🔁 Auto",
       "use_all_providers": true,
