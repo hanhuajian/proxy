@@ -272,7 +272,8 @@
       { "protocol": "dns", "action": "hijack-dns" },
       { "rule_set": [ "Ads" ], "outbound": "广告拦截" },
       { "rule_set": [ "cn-lite", "private" ], "outbound": "DIRECT" },
-      { "rule_set": "javdb", "outbound": "手动选择" },
+      { "domain_suffix": [ "hanime1.me" ], "outbound": "手动选择" },
+      { "rule_set": "javdb", "outbound": "手动选择" }，
       { "rule_set": "tiktok", "outbound": "TikTok" },
       { "rule_set": "youtube", "outbound": "YouTube" },
       { "rule_set": "google", "outbound": "Google" },
