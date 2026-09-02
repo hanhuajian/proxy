@@ -1,7 +1,5 @@
 {
-  // 全局日志配置：panic 表示仅输出致命错误，日志很少；timestamp 打开时间戳。
   "log": { "level": "panic", "timestamp": true },
-  // 远程订阅源：从机场或第三方订阅地址拉取节点列表，并按周期更新。
   "providers": [
     {
       "type": "remote",
@@ -12,7 +10,6 @@
       "update_interval": "30d"
     }
   ],
-  // DNS 解析策略：优先使用阿里 DNS 作为国内稳定上游，保留 DNSPod 作为备用/分流入口，最终兜底走 cloudflare。
   "dns": {
     "servers": [
       {
@@ -23,15 +20,9 @@
       },
       {
         "type": "https",
-        "tag": "AliDNS",
-        "server": "dns.alidns.com",
-        "path": "dns-query",
-        "domain_resolver": "bootstrap"
-      },
-      {
-        "type": "https",
-        "tag": "DNSPod",
-        "server": "doh.pub",
+        "tag": "yiancloud",
+        "server": "dns.yiancloud.com.cn",
+        "server_port": 843,
         "path": "dns-query",
         "domain_resolver": "bootstrap"
       },
@@ -40,7 +31,8 @@
         "tag": "cloudflare",
         "server": "cloudflare-dns.com",
         "path": "dns-query",
-        "domain_resolver": "bootstrap"
+        "domain_resolver": "bootstrap",
+        "detour": "DNS"
       },
       {
         "type": "fakeip",
@@ -50,9 +42,8 @@
       }
     ],
     "rules": [
-      { "clash_mode": "Direct", "server": "bootstrap" },
-      { "domain_keyword": "mtalk.google", "server": "bootstrap" },
-      { "rule_set": [ "cn", "private", "fakeip-filter" ], "server": "bootstrap" },
+      { "clash_mode": "Direct", "server": "yiancloud" },
+      { "rule_set": [ "cn", "private", "fakeip-filter" ], "server": "yiancloud" },
       { "query_type": [ "A", "AAAA" ], "action": "evaluate", "server": "cloudflare" },
       {
         "type": "logical",
@@ -61,7 +52,7 @@
           { "rule_set": "cnip", "match_response": true },
           { "ip_is_private": true, "match_response": true }
         ],
-        "server": "bootstrap"
+        "server": "yiancloud"
       },
       { "query_type": [ "A", "AAAA" ], "server": "fake-ip-resolver" }
     ],
@@ -71,7 +62,6 @@
     "strategy": "prefer_ipv4",
     "cache_capacity": 8192
   },
-  // 本地监听入口：本机/网络代理请求会进入这里，再根据规则转发到对应出口。
   "inbounds": [
     {
       "type": "ebpf",
@@ -79,10 +69,10 @@
       "mode": "hybrid",
       "network": ["tcp", "udp"],
       "udp_timeout": "5m",
-      "bypass_rule_set": ["cnip", "privateip"],
-      "local":{
+      "bypass_rule_set": [ "cnip"],
+      "local": {
         "dns_mode": "respect_policy",
-        "ipv6": true,
+        "ipv6": false,
         "bypass_private_address": true,
         "include_uid": [],
         "include_uid_range": [],
@@ -90,7 +80,9 @@
         "exclude_uid_range": [],
         "include_android_user": [],
         "include_package": [],
-        "exclude_package": []
+        "exclude_package": [],
+        "bypass_port": [],
+        "bypass_port_range": []
       },
       "shared": {
         "dns_mode": "respect_policy",
@@ -107,7 +99,7 @@
           "tc_priority": 1
         }
       }
-  },
+    },
     {
       "type": "mixed",
       "tag": "mixed-in",
@@ -115,7 +107,6 @@
       "listen_port": 7890
     }
   ],
-  // 出站分流配置：按地区、按平台、按应用分组选择具体节点或直连/拦截。
   "outbounds": [
     {
       "type": "selector",
@@ -127,7 +118,7 @@
     {
       "type": "selector",
       "tag": "总模式",
-      "outbounds": [ "手动选择", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点" ],
+      "outbounds": [ "手动选择", "狮城节点", "日本节点", "美国节点", "墨尔本节点" ],
       "default": "手动选择",
       "interrupt_exist_connections": true
     },
@@ -140,43 +131,43 @@
     },
     {
       "type": "selector",
-      "tag": "Microsoft",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
-      "default": "总模式",
-      "interrupt_exist_connections": true
-    },
-    {
-      "type": "selector",
       "tag": "Telegram",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
       "default": "总模式",
       "interrupt_exist_connections": true
     },
     {
       "type": "selector",
       "tag": "TikTok",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
       "default": "总模式",
       "interrupt_exist_connections": true
     },
     {
       "type": "selector",
       "tag": "YouTube",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
       "default": "总模式",
       "interrupt_exist_connections": true
     },
     {
       "type": "selector",
       "tag": "Google",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
       "default": "总模式",
       "interrupt_exist_connections": true
     },
     {
       "type": "selector",
       "tag": "Github",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
+      "default": "总模式",
+      "interrupt_exist_connections": true
+    },
+    {
+      "type": "selector",
+      "tag": "JavDB",
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
       "default": "总模式",
       "interrupt_exist_connections": true
     },
@@ -189,16 +180,16 @@
     },
     {
       "type": "selector",
-      "tag": "漏网之鱼",
-      "outbounds": [ "总模式", "香港节点", "狮城节点", "日本节点", "台湾节点", "美国节点", "澳大利亚节点", "DIRECT", "手动选择" ],
+      "tag": "DNS",
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
       "default": "总模式",
       "interrupt_exist_connections": true
     },
     {
       "type": "selector",
-      "tag": "香港节点",
-      "use_all_providers": true,
-      "include": "(?i)(香港|HK|hk|Hong Kong|HongKong|hongkong)",
+      "tag": "漏网之鱼",
+      "outbounds": [ "总模式", "狮城节点", "日本节点", "美国节点", "墨尔本节点", "DIRECT", "手动选择" ],
+      "default": "总模式",
       "interrupt_exist_connections": true
     },
     {
@@ -218,13 +209,6 @@
     },
     {
       "type": "selector",
-      "tag": "台湾节点",
-      "use_all_providers": true,
-      "include": "(?i)(台|tw|TW|Taiwan)",
-      "interrupt_exist_connections": true
-    },
-    {
-      "type": "selector",
       "tag": "美国节点",
       "use_all_providers": true,
       "include": "(?i)(美|America|US|us|United States)",
@@ -233,9 +217,9 @@
     },
     {
       "type": "selector",
-      "tag": "澳大利亚节点",
+      "tag": "墨尔本节点",
       "use_all_providers": true,
-      "include": "(?i)(墨尔本|澳大利亚|Australia|AU|au|Sydney|Melbourne)",
+      "include": "(?i)(墨尔本|Melbourne|AU|au|Australia)",
       "interrupt_exist_connections": true
     },
     {
@@ -248,7 +232,7 @@
       "type": "direct",
       "tag": "DIRECT",
       "domain_resolver": {
-        "server": "bootstrap",
+        "server": "yiancloud",
         "strategy": "prefer_ipv4"
       },
       "tcp_keep_alive": "5m",
@@ -261,7 +245,6 @@
       "tag": "block"
     }
   ],
-  // 路由规则：按照端口、IP、域名、规则集、包名等决定最终 outbound。
   "route": {
     "rules": [
       { "port": 53, "action": "hijack-dns" },
@@ -272,13 +255,12 @@
       { "protocol": "dns", "action": "hijack-dns" },
       { "rule_set": [ "Ads" ], "outbound": "广告拦截" },
       { "rule_set": [ "cn-lite", "private" ], "outbound": "DIRECT" },
-      { "domain_suffix": [ "hanime1.me" ], "outbound": "手动选择" },
-      { "rule_set": "javdb", "outbound": "手动选择" },
+      { "domain_keyword": "hanime1", "outbound": "JavDB" },
       { "rule_set": "tiktok", "outbound": "TikTok" },
       { "rule_set": "youtube", "outbound": "YouTube" },
       { "rule_set": "google", "outbound": "Google" },
-      { "rule_set": "microsoft", "outbound": "Microsoft" },
       { "rule_set": "github", "outbound": "Github" },
+      { "rule_set": "javdb", "outbound": "JavDB" },
       { "action": "resolve", "match_only": true },
       { "rule_set": [ "cnip", "privateip" ], "outbound": "DIRECT" },
       { "rule_set": "telegramip", "outbound": "Telegram" },
@@ -290,7 +272,7 @@
         "format": "binary",
         "tag": [
           "cn-lite", "cn", "cnip", "private", "privateip",
-          "tiktok", "youtube", "telegramip", "fakeip-filter"
+          "ai", "tiktok", "youtube", "telegramip", "fakeip-filter"
         ],
         "url": "https://cdn.gh-proxy.org/https://github.com/DustinWin/ruleset_geodata/releases/download/sing-box-ruleset/{tag}.srs",
         "path": "./rules/{tag}.srs",
@@ -299,7 +281,15 @@
       {
         "type": "remote",
         "format": "binary",
-        "tag": [ "google", "microsoft", "github", "javdb" ],
+        "tag": [ "google", "github" ],
+        "url": "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/sing/geo-lite/geosite/{tag}.srs",
+        "path": "./rules/{tag}.srs",
+        "update_interval": "1d"
+      },
+      {
+        "type": "remote",
+        "format": "binary",
+        "tag": [ "javdb" ],
         "url": "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/sing/geo/geosite/{tag}.srs",
         "path": "./rules/{tag}.srs",
         "update_interval": "1d"
@@ -324,11 +314,10 @@
     "final": "漏网之鱼",
     "auto_detect_interface": true,
     "find_process": true,
-    "default_domain_resolver": "bootstrap",
+    "default_domain_resolver": "yiancloud",
     "default_http_client": "sources_downloader",
     "default_domain_match_strategy": "prefer_fqdn"
   },
-  // 实验性/控制面板配置：缓存、FakeIP、Clash API 面板等。
   "experimental": {
     "cache_file": { "enabled": true, "store_fakeip": true, "store_dns": true },
     "clash_api": {
@@ -339,7 +328,6 @@
     },
     "urltest_unified_delay": true
   },
-  // HTTP 客户端配置：用于下载订阅和规则集时指定 UA/路由行为。
   "http_clients": [
     {
       "tag": "nodes_downloader",
