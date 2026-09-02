@@ -299,7 +299,7 @@
         "type": "remote",
         "format": "binary",
         "tag": [ "google", "microsoft", "github" ],
-        "url": "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/sing/geo-lite/geosite/{tag}.srs",
+        "url": "https://cdn.gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/sing/geo/geosite/{tag}.srs",
         "path": "./rules/{tag}.srs",
         "update_interval": "1d"
       },
